@@ -28,6 +28,7 @@ public class ExpandableListItem extends View {
     public SetupInfo setup;
     private HeightInfo heights;
     private PositionInfo positions;
+    private AnimationInfo anim;
     private DragInfo drag;
 
     private VerticalDragHandler vertical_drag_handler;
@@ -84,6 +85,7 @@ public class ExpandableListItem extends View {
         heights = new HeightInfo();
         positions = new PositionInfo();
         drag = new DragInfo();
+        anim = new AnimationInfo();
 
         vertical_drag_handler = new VerticalDragHandler();
     }
@@ -106,26 +108,63 @@ public class ExpandableListItem extends View {
 
         if (first_time || reset) {
 
-            int canvas_y = 0;
-            heights.ht_diff_cntr_nd_bttm = heights.bottom_height - heights.center_height;
-            positions.bottom_y = (canvas_y - heights.ht_diff_cntr_nd_bttm);
-
-            positions.max_bottom_y = heights.center_height;
-            positions.min_bottom_y = positions.bottom_y;
-
-            if (setup.expanded) positions.bottom_y = positions.max_bottom_y;
-
-            drag.drag_fling_threshold = heights.bottom_height * 0.2f;
-
-            if (first_time) first_time = false;
-            if (reset) reset = false;
+            resetValues();
         }
 
-        int position_diff = 0 - positions.min_bottom_y;
-        heights.canvas_height = heights.canvas_min_height;
-        heights.canvas_height += (positions.bottom_y + position_diff);
+        if (anim.animate) {
+
+            measureForAnimation();
+        }
+
+        if (anim.animate) {
+
+            int position_diff = 0 - positions.min_bottom_y;
+            heights.canvas_height = heights.canvas_min_height;
+            heights.canvas_height += (anim.bottom_y + position_diff);
+
+        } else {
+
+            int position_diff = 0 - positions.min_bottom_y;
+            heights.canvas_height = heights.canvas_min_height;
+            heights.canvas_height += (positions.bottom_y + position_diff);
+        }
 
         setMeasuredDimension(MeasureSpec.getSize(width_measure_spec), heights.canvas_height);
+    }
+
+    private void resetValues() {
+
+        int canvas_y = 0;
+        heights.ht_diff_cntr_nd_bttm = heights.bottom_height - heights.center_height;
+        positions.bottom_y = (canvas_y - heights.ht_diff_cntr_nd_bttm);
+
+        positions.max_bottom_y = heights.center_height;
+        positions.min_bottom_y = positions.bottom_y;
+
+        if (setup.expanded) positions.bottom_y = positions.max_bottom_y;
+
+        drag.drag_fling_threshold = heights.bottom_height * 0.2f;
+
+        if (first_time) first_time = false;
+        if (reset) reset = false;
+    }
+
+    private void measureForAnimation() {
+
+        if (positions.bottom_y == positions.max_bottom_y) {
+            // open by anim
+            anim.bottom_y = anim.bottom_y + (anim.anim_multiplier);
+            if (anim.bottom_y >= positions.bottom_y) {
+                anim.animate = false;
+            }
+
+        } else if (positions.bottom_y == positions.min_bottom_y) {
+            // close by anim
+            anim.bottom_y = anim.bottom_y - (anim.anim_multiplier);
+            if (anim.bottom_y <= positions.bottom_y) {
+                anim.animate = false;
+            }
+        }
     }
 
     @Override
@@ -142,9 +181,28 @@ public class ExpandableListItem extends View {
 
         super.onDraw(canvas);
 
-        canvas.translate(0, positions.bottom_y);
+        if (anim.animate) {
+
+            animateCanvas(canvas);
+
+        } else {
+
+            redraw(canvas, positions.bottom_y);
+        }
+    }
+
+    private void animateCanvas(Canvas canvas) {
+
+        redraw(canvas, anim.bottom_y);
+        requestLayout();
+        invalidate();
+    }
+
+    private void redraw(Canvas canvas, int bottom_y) {
+
+        canvas.translate(0, bottom_y);
         setup.bottom_layout.draw(canvas);
-        canvas.translate(0, (positions.bottom_y * -1));
+        canvas.translate(0, (bottom_y * -1));
         setup.center_layout.draw(canvas);
     }
 
@@ -155,22 +213,40 @@ public class ExpandableListItem extends View {
         else return false;
     }
 
-    public void open() {
+    public void open(boolean animate) {
 
-        positions.bottom_y = positions.max_bottom_y;
-        requestLayout();
-        invalidate();
+        if (!setup.expanded) {
 
-        setup.expanded = true;
+            if (animate) {
+                anim.animate = true;
+                anim.bottom_y = positions.bottom_y;
+                anim.anim_multiplier = heights.bottom_height / 15;
+            }
+
+            positions.bottom_y = positions.max_bottom_y;
+            requestLayout();
+            invalidate();
+
+            setup.expanded = true;
+        }
     }
 
-    public void close() {
+    public void close(boolean animate) {
 
-        positions.bottom_y = positions.min_bottom_y;
-        requestLayout();
-        invalidate();
+        if (setup.expanded) {
 
-        setup.expanded = false;
+            if (animate) {
+                anim.animate = true;
+                anim.bottom_y = positions.bottom_y;
+                anim.anim_multiplier = heights.bottom_height / 15;
+            }
+
+            positions.bottom_y = positions.min_bottom_y;
+            requestLayout();
+            invalidate();
+
+            setup.expanded = false;
+        }
     }
 
     public void reset() {
@@ -226,6 +302,13 @@ public class ExpandableListItem extends View {
         public int min_bottom_y = 0;
     }
 
+    private class AnimationInfo {
+
+        public boolean animate = false;
+        public int bottom_y = 0;
+        public int anim_multiplier = 4;
+    }
+
     private class DragInfo {
 
         public float drag_fling_threshold = 0;
@@ -236,7 +319,6 @@ public class ExpandableListItem extends View {
     private class VerticalDragHandler {
 
         private long down_time = 0;
-        private int y_bfr_dn = 0;
         private float y1 = 0;
         private float y2 = 0;
         private float dn_y = 0;
@@ -262,7 +344,7 @@ public class ExpandableListItem extends View {
                         is_two_finger_move = true;
                         getParent().requestDisallowInterceptTouchEvent(true);
                         handleMotionMove(event);
-                    } else is_two_finger_move = false;
+                    }
                     break;
 
                 case MotionEvent.ACTION_UP:
@@ -278,7 +360,6 @@ public class ExpandableListItem extends View {
         private void handleMotionDown(MotionEvent event) {
 
             down_time = System.currentTimeMillis();
-            y_bfr_dn = positions.bottom_y;
             y1 = event.getRawY();
             dn_y = y1;
         }
@@ -317,6 +398,10 @@ public class ExpandableListItem extends View {
                 if (change_y > 0) dir = DIRECTION.DOWN;
                 if (change_y < 0) dir = DIRECTION.UP;
 
+                anim.animate = true;
+                anim.bottom_y = positions.bottom_y;
+                anim.anim_multiplier = heights.bottom_height / 15;
+
                 if (Math.abs(change_y) > drag.drag_fling_threshold) {
                     if (dir == DIRECTION.DOWN) positions.bottom_y = positions.max_bottom_y;
                     if (dir == DIRECTION.UP) positions.bottom_y = positions.min_bottom_y;
@@ -327,12 +412,10 @@ public class ExpandableListItem extends View {
                 }
 
                 if (dir == DIRECTION.UNKNOWN) {
-
                     // IF DIRECTION IS SOMEHOW UNKNOWN, THEN SET THE BOTTOM_Y TO THE NEAREST MIN OR MAX VALUES
                     int half_of_movement = heights.bottom_height / 2;
                     if (change_y >= half_of_movement) positions.bottom_y = positions.max_bottom_y;
-                    if (change_y < half_of_movement) positions.bottom_y = positions.min_bottom_y;
-                    else positions.bottom_y = y_bfr_dn;
+                    else positions.bottom_y = positions.min_bottom_y;
                 }
 
                 requestLayout();
@@ -354,10 +437,10 @@ public class ExpandableListItem extends View {
                 if (delay >= setup.long_press_delay) {
 
                     if (!setup.expanded) {
-                        open();
+                        open(true);
                         if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableListItem.this);
                     } else if (setup.expanded) {
-                        close();
+                        close(true);
                         if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableListItem.this);
                     }
                 }

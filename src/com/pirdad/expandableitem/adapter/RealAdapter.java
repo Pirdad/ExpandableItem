@@ -80,8 +80,8 @@ public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemO
         //view.setup.id = feed.id;
         view.setup.two_finger_drag = true;
         view.setup.extra_params.put("ITEM_REF", feed);
-        if (feed.is_open) view.open();
-        else view.close();
+        if (feed.is_open) view.open(false);
+        else view.close(false);
 
         TextView txt_visible = (TextView) view.setup.center_layout.findViewById(R.id.txt_visible);
         TextView txt_hidden = (TextView) view.setup.bottom_layout.findViewById(R.id.txt_hidden);

@@ -9,7 +9,6 @@ import com.pirdad.expandableitem.adapter.RealAdapter;
 import com.pirdad.expandableitem.datacraver.*;
 import com.pirdad.expandableitem.object.ExampleObject;
 import com.pirdad.expandableitem.object.Feed;
-import org.apache.http.message.BasicNameValuePair;
 
 import java.util.ArrayList;
 
