@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -21,7 +20,7 @@ import java.util.Map;
  * Time: 1:29 PM
  * To change this template use File | Settings | File Templates.
  */
-public class ExpandableListItem extends View {
+public class ExpandableItem extends View {
 
     private Context context;
 
@@ -36,20 +35,20 @@ public class ExpandableListItem extends View {
     private boolean first_time = true;
     private boolean reset = false;
 
-    public ExpandableListItem(Context context) {
+    public ExpandableItem(Context context) {
 
         super(context);
         initialize(context, setup);
     }
 
-    public ExpandableListItem(Context context, AttributeSet attrs) {
+    public ExpandableItem(Context context, AttributeSet attrs) {
 
         super(context, attrs);
         setup = getDefaultSetup(context);
         initialize(context, setup);
     }
 
-    public ExpandableListItem(Context context, AttributeSet attrs, int defStyle) {
+    public ExpandableItem(Context context, AttributeSet attrs, int defStyle) {
 
         super(context, attrs, defStyle);
         setup = getDefaultSetup(context);
@@ -257,8 +256,8 @@ public class ExpandableListItem extends View {
     // ==================================================================================================
     public interface ItemOpenListener {
 
-        public void onItemOpened(int id, ExpandableListItem view);
-        public void onItemClosed(int id, ExpandableListItem view);
+        public void onItemOpened(int id, ExpandableItem view);
+        public void onItemClosed(int id, ExpandableItem view);
     }
 
     public class SetupInfo {
@@ -271,8 +270,10 @@ public class ExpandableListItem extends View {
         public long long_press_delay = 2 * 1000;
 
         public boolean expanded = false;
-        public boolean two_finger_drag = true;
+        //public boolean two_finger_drag = true;
         public boolean long_press_expand = true;
+
+        public DRAG_GESTURE drag_gesture = DRAG_GESTURE.TWO_FINGER;
 
         public ItemOpenListener open_listener;
         public Map<String, Object> extra_params;
@@ -315,6 +316,7 @@ public class ExpandableListItem extends View {
     }
 
     private enum DIRECTION {UNKNOWN, UP, DOWN, LEFT, RIGHT};
+    public enum DRAG_GESTURE {NONE, ONE_FINGER, TWO_FINGER, THREE_FINGER};
 
     private class VerticalDragHandler {
 
@@ -323,7 +325,7 @@ public class ExpandableListItem extends View {
         private float y2 = 0;
         private float dn_y = 0;
         private float up_y = 0;
-        private boolean is_two_finger_move = false;
+        private boolean is_crct_nmbr_of_pointers = false;
         private DIRECTION dir = DIRECTION.UNKNOWN;
 
         public boolean onTouch(MotionEvent event) {
@@ -340,8 +342,13 @@ public class ExpandableListItem extends View {
 
                 case MotionEvent.ACTION_MOVE:
 
-                    if (setup.two_finger_drag && finger_touch_count == 2) {
-                        is_two_finger_move = true;
+                    int tch_cnt_to_chk = 0;
+                    if (setup.drag_gesture == DRAG_GESTURE.ONE_FINGER) tch_cnt_to_chk = 1;
+                    if (setup.drag_gesture == DRAG_GESTURE.TWO_FINGER) tch_cnt_to_chk = 2;
+                    if (setup.drag_gesture == DRAG_GESTURE.THREE_FINGER) tch_cnt_to_chk = 3;
+
+                    if (setup.drag_gesture != DRAG_GESTURE.NONE && finger_touch_count == tch_cnt_to_chk) {
+                        is_crct_nmbr_of_pointers = true;
                         getParent().requestDisallowInterceptTouchEvent(true);
                         handleMotionMove(event);
                     }
@@ -350,7 +357,7 @@ public class ExpandableListItem extends View {
                 case MotionEvent.ACTION_UP:
 
                     handleMotionUp(event);
-                    is_two_finger_move = false;
+                    is_crct_nmbr_of_pointers = false;
                     break;
             }
 
@@ -392,7 +399,7 @@ public class ExpandableListItem extends View {
             up_y = event.getRawY();
             float change_y = up_y - dn_y;
 
-            if (is_two_finger_move) {
+            if (is_crct_nmbr_of_pointers) {
 
                 if (change_y == 0) dir = DIRECTION.UNKNOWN;
                 if (change_y > 0) dir = DIRECTION.DOWN;
@@ -423,11 +430,11 @@ public class ExpandableListItem extends View {
 
                 if (!setup.expanded && positions.bottom_y == positions.max_bottom_y) {
                     setup.expanded = true;
-                    if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableListItem.this);
+                    if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableItem.this);
                 }
                 if (setup.expanded && positions.bottom_y == positions.min_bottom_y) {
                     setup.expanded = false;
-                    if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableListItem.this);
+                    if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableItem.this);
                 }
 
             } else if (setup.long_press_expand) {
@@ -438,10 +445,10 @@ public class ExpandableListItem extends View {
 
                     if (!setup.expanded) {
                         open(true);
-                        if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableListItem.this);
+                        if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableItem.this);
                     } else if (setup.expanded) {
                         close(true);
-                        if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableListItem.this);
+                        if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableItem.this);
                     }
                 }
             }

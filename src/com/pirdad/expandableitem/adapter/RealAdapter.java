@@ -9,7 +9,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.pirdad.expandableitem.R;
 import com.pirdad.expandableitem.object.Feed;
-import com.pirdad.expandableitem.view.ExpandableListItem;
+import com.pirdad.expandableitem.view.ExpandableItem;
 
 import java.util.ArrayList;
 
@@ -21,7 +21,7 @@ import java.util.ArrayList;
  * Time: 5:19 PM
  * To change this template use File | Settings | File Templates.
  */
-public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemOpenListener {
+public class RealAdapter extends BaseAdapter implements ExpandableItem.ItemOpenListener {
 
     private Context context;
     private LayoutInflater inflater;
@@ -55,7 +55,7 @@ public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemO
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
-        ExpandableListItem view = (ExpandableListItem) convertView;
+        ExpandableItem view = (ExpandableItem) convertView;
         Feed feed = items.get(position);
 
         if (view == null || feed.hidden_view == null) {
@@ -63,7 +63,7 @@ public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemO
             View view_visible = inflater.inflate(R.layout.item_visible, null);
             View view_hidden = inflater.inflate(R.layout.item_hidden, null);
 
-            view = new ExpandableListItem(context);
+            view = new ExpandableItem(context);
             view.setup = view.new SetupInfo();
             view.setup.center_layout = view_visible;
             view.setup.bottom_layout = view_hidden;
@@ -77,8 +77,6 @@ public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemO
             view.reset();
         }
 
-        //view.setup.id = feed.id;
-        view.setup.two_finger_drag = true;
         view.setup.extra_params.put("ITEM_REF", feed);
         if (feed.is_open) view.open(false);
         else view.close(false);
@@ -93,7 +91,7 @@ public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemO
     }
 
     @Override
-    public void onItemOpened(int id, ExpandableListItem view) {
+    public void onItemOpened(int id, ExpandableItem view) {
 
         Feed item = (Feed) view.setup.extra_params.get("ITEM_REF");
         item.is_open = true;
@@ -101,7 +99,7 @@ public class RealAdapter extends BaseAdapter implements ExpandableListItem.ItemO
     }
 
     @Override
-    public void onItemClosed(int id, ExpandableListItem view) {
+    public void onItemClosed(int id, ExpandableItem view) {
 
         Feed item = (Feed) view.setup.extra_params.get("ITEM_REF");
         item.is_open = false;
