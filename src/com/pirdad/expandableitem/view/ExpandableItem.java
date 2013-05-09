@@ -38,6 +38,7 @@ public class ExpandableItem extends View {
     public ExpandableItem(Context context) {
 
         super(context);
+        setup = new SetupInfo();
         initialize(context, setup);
     }
 
@@ -316,7 +317,12 @@ public class ExpandableItem extends View {
     }
 
     private enum DIRECTION {UNKNOWN, UP, DOWN, LEFT, RIGHT};
-    public enum DRAG_GESTURE {NONE, ONE_FINGER, TWO_FINGER, THREE_FINGER};
+    public enum DRAG_GESTURE {NONE(0), ONE_FINGER(1), TWO_FINGER(2), THREE_FINGER(3);
+        int value;
+        DRAG_GESTURE(int num) {
+            this.value = num;
+        }
+    };
 
     private class VerticalDragHandler {
 
@@ -330,7 +336,6 @@ public class ExpandableItem extends View {
 
         public boolean onTouch(MotionEvent event) {
 
-            int finger_touch_count = event.getPointerCount();
             int action = event.getAction();
 
             switch (action) {
@@ -342,12 +347,8 @@ public class ExpandableItem extends View {
 
                 case MotionEvent.ACTION_MOVE:
 
-                    int tch_cnt_to_chk = 0;
-                    if (setup.drag_gesture == DRAG_GESTURE.ONE_FINGER) tch_cnt_to_chk = 1;
-                    if (setup.drag_gesture == DRAG_GESTURE.TWO_FINGER) tch_cnt_to_chk = 2;
-                    if (setup.drag_gesture == DRAG_GESTURE.THREE_FINGER) tch_cnt_to_chk = 3;
-
-                    if (setup.drag_gesture != DRAG_GESTURE.NONE && finger_touch_count == tch_cnt_to_chk) {
+                    int finger_touch_count = event.getPointerCount();
+                    if (finger_touch_count == setup.drag_gesture.value) {
                         is_crct_nmbr_of_pointers = true;
                         getParent().requestDisallowInterceptTouchEvent(true);
                         handleMotionMove(event);

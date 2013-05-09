@@ -64,7 +64,6 @@ public class RealAdapter extends BaseAdapter implements ExpandableItem.ItemOpenL
             View view_hidden = inflater.inflate(R.layout.item_hidden, null);
 
             view = new ExpandableItem(context);
-            view.setup = view.new SetupInfo();
             view.setup.center_layout = view_visible;
             view.setup.bottom_layout = view_hidden;
             view.setup.long_press_delay = 1000;

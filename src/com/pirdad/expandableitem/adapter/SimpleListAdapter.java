@@ -20,13 +20,13 @@ import java.util.ArrayList;
  * Time: 3:03 PM
  * To change this template use File | Settings | File Templates.
  */
-public class SimpleAdapter extends BaseAdapter implements ExpandableItem.ItemOpenListener {
+public class SimpleListAdapter extends BaseAdapter implements ExpandableItem.ItemOpenListener {
 
     private Context context;
     private LayoutInflater inflater;
     private ArrayList<TestItem> items;
 
-    public SimpleAdapter(Context context) {
+    public SimpleListAdapter(Context context) {
 
         this.context = context;
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -69,14 +69,12 @@ public class SimpleAdapter extends BaseAdapter implements ExpandableItem.ItemOpe
         }
 
         ExpandableItem view = new ExpandableItem(context);
-        view.setup = view.new SetupInfo();
+        view.setup.id = tst_item.id;
         view.setup.center_layout = view_visible;
         view.setup.bottom_layout = view_hidden;
+        view.setup.drag_gesture = ExpandableItem.DRAG_GESTURE.TWO_FINGER;
         view.setup.long_press_delay = 1000;
         view.setup.open_listener = this;
-
-        view.setup.id = tst_item.id;
-        view.setup.drag_gesture = ExpandableItem.DRAG_GESTURE.TWO_FINGER;
         view.setup.extra_params.put("ITEM_REF", tst_item);
         if (tst_item.is_open) view.open(false);
         else view.close(false);
@@ -95,7 +93,7 @@ public class SimpleAdapter extends BaseAdapter implements ExpandableItem.ItemOpe
 
         TestItem item = (TestItem) view.setup.extra_params.get("ITEM_REF");
         item.is_open = true;
-        Toast.makeText(context, "item: " + id + " is now open", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(context, "item: " + id + " is now open", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -103,7 +101,7 @@ public class SimpleAdapter extends BaseAdapter implements ExpandableItem.ItemOpe
 
         TestItem item = (TestItem) view.setup.extra_params.get("ITEM_REF");
         item.is_open = false;
-        Toast.makeText(context, "item: " + id + " is now closed", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(context, "item: " + id + " is now closed", Toast.LENGTH_SHORT).show();
     }
 
     public class TestItem {

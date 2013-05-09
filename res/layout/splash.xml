@@ -7,12 +7,17 @@
     <Button
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Test"
-            android:id="@+id/btn_test"/>
+            android:text="Simple Single View"
+            android:id="@+id/btn_simple_single"/>
     <Button
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Real"
-            android:id="@+id/btn_real"/>
+            android:text="Simple List Items"
+            android:id="@+id/btn_simple_list"/>
+    <Button
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Real Test"
+            android:id="@+id/btn_real_test"/>
 </LinearLayout>
 

@@ -9,8 +9,9 @@ import android.widget.Button;
 
 public class TestActivity extends Activity {
 
-    private Button btn_test;
-    private Button btn_real;
+    private Button btn_simple_single;
+    private Button btn_simple_list;
+    private Button btn_real_test;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -19,18 +20,28 @@ public class TestActivity extends Activity {
 
         setContentView(R.layout.splash);
 
-        btn_test = (Button) findViewById(R.id.btn_test);
-        btn_test.setOnClickListener(new View.OnClickListener() {
+        btn_simple_single = (Button) findViewById(R.id.btn_simple_single);
+        btn_simple_single.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
 
-                Intent intent = new Intent(TestActivity.this, SimpleActivity.class);
+                Intent intent = new Intent(TestActivity.this, SimpleSingleActivity.class);
                 startActivity(intent);
             }
         });
-        btn_real = (Button) findViewById(R.id.btn_real);
-        btn_real.setOnClickListener(new View.OnClickListener() {
+        btn_simple_list = (Button) findViewById(R.id.btn_simple_list);
+        btn_simple_list.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                Intent intent = new Intent(TestActivity.this, SimpleListActivity.class);
+                startActivity(intent);
+            }
+        });
+        btn_real_test = (Button) findViewById(R.id.btn_real_test);
+        btn_real_test.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
