@@ -61,7 +61,7 @@ public class RealAdapter extends BaseAdapter implements ExpandableItem.ItemOpenL
         if (view == null || feed.hidden_view == null) {
 
             View view_visible = inflater.inflate(R.layout.item_visible, null);
-            View view_hidden = inflater.inflate(R.layout.item_hidden, null);
+            View view_hidden = inflater.inflate(R.layout.item_hidden_expandable, null);
 
             view = new ExpandableItem(context);
             view.setup.center_layout = view_visible;
@@ -77,8 +77,8 @@ public class RealAdapter extends BaseAdapter implements ExpandableItem.ItemOpenL
         }
 
         view.setup.extra_params.put("ITEM_REF", feed);
-        if (feed.is_open) view.open(false);
-        else view.close(false);
+        if (feed.is_open) view.open(false, false);
+        else view.close(false, false);
 
         TextView txt_visible = (TextView) view.setup.center_layout.findViewById(R.id.txt_visible);
         TextView txt_hidden = (TextView) view.setup.bottom_layout.findViewById(R.id.txt_hidden);

@@ -8,6 +8,7 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -111,12 +112,12 @@ public class ExpandableItem extends View {
             resetValues();
         }
 
-        if (anim.animate) {
+        if (anim.animating) {
 
             measureForAnimation();
         }
 
-        if (anim.animate) {
+        if (anim.animating) {
 
             int position_diff = 0 - positions.min_bottom_y;
             heights.canvas_height = heights.canvas_min_height;
@@ -141,7 +142,7 @@ public class ExpandableItem extends View {
         positions.max_bottom_y = heights.center_height;
         positions.min_bottom_y = positions.bottom_y;
 
-        if (setup.expanded) positions.bottom_y = positions.max_bottom_y;
+        if (setup.is_expanded) positions.bottom_y = positions.max_bottom_y;
 
         drag.drag_fling_threshold = heights.bottom_height * 0.2f;
 
@@ -155,14 +156,16 @@ public class ExpandableItem extends View {
             // open by anim
             anim.bottom_y = anim.bottom_y + (anim.anim_multiplier);
             if (anim.bottom_y >= positions.bottom_y) {
-                anim.animate = false;
+                anim.bottom_y = positions.bottom_y;
+                anim.animating = false;
             }
 
         } else if (positions.bottom_y == positions.min_bottom_y) {
             // close by anim
             anim.bottom_y = anim.bottom_y - (anim.anim_multiplier);
             if (anim.bottom_y <= positions.bottom_y) {
-                anim.animate = false;
+                anim.bottom_y = positions.bottom_y;
+                anim.animating = false;
             }
         }
     }
@@ -181,7 +184,7 @@ public class ExpandableItem extends View {
 
         super.onDraw(canvas);
 
-        if (anim.animate) {
+        if (anim.animating) {
 
             animateCanvas(canvas);
 
@@ -189,6 +192,8 @@ public class ExpandableItem extends View {
 
             redraw(canvas, positions.bottom_y);
         }
+
+        checkForOpenOrClose();
     }
 
     private void animateCanvas(Canvas canvas) {
@@ -206,6 +211,40 @@ public class ExpandableItem extends View {
         setup.center_layout.draw(canvas);
     }
 
+    private void checkForOpenOrClose() {
+
+        if (opening) {
+
+            if (anim.bottom_y == positions.bottom_y && positions.bottom_y == positions.max_bottom_y) {
+                resetOpen();
+            }
+
+        } else if (closing) {
+
+            if (anim.bottom_y == positions.bottom_y && positions.bottom_y == positions.min_bottom_y) {
+                resetClose();
+            }
+        }
+    }
+
+    private void resetOpen() {
+
+        opening = false;
+        if (should_notify_on_open && setup.open_listener != null) {
+            setup.is_expanded = true;
+            setup.open_listener.onItemOpened(setup.id, this);
+        }
+    }
+
+    private void resetClose() {
+
+        closing = false;
+        if (should_notify_on_close && setup.open_listener != null) {
+            setup.is_expanded = false;
+            setup.open_listener.onItemClosed(setup.id, this);
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
@@ -213,45 +252,61 @@ public class ExpandableItem extends View {
         else return false;
     }
 
-    public void open(boolean animate) {
+    private boolean should_notify_on_open = true;
+    private boolean opening = false;
+    private void openBottom(boolean animate, boolean notify_listener) {
 
-        if (!setup.expanded) {
-
-            if (animate) {
-                anim.animate = true;
-                anim.bottom_y = positions.bottom_y;
-                anim.anim_multiplier = heights.bottom_height / 15;
-            }
-
+        should_notify_on_open = notify_listener;
+        opening = true;
+        if (animate) {
+            anim.animating = true;
+            anim.anim_multiplier = heights.bottom_height / 15;
+            anim.bottom_y = positions.bottom_y;
             positions.bottom_y = positions.max_bottom_y;
-            requestLayout();
-            invalidate();
-
-            setup.expanded = true;
+        } else {
+            positions.bottom_y = positions.max_bottom_y;
+            anim.bottom_y = positions.bottom_y;
         }
+
+        requestLayout();
+        invalidate();
     }
 
-    public void close(boolean animate) {
+    public void open(boolean animate, boolean notify_listener) {
 
-        if (setup.expanded) {
+        if (!setup.is_expanded) openBottom(animate, notify_listener);
+    }
 
-            if (animate) {
-                anim.animate = true;
-                anim.bottom_y = positions.bottom_y;
-                anim.anim_multiplier = heights.bottom_height / 15;
-            }
+    private boolean should_notify_on_close = true;
+    private boolean closing = false;
+    private void closeBottom(boolean animate, boolean notify_listener) {
 
+        should_notify_on_close = notify_listener;
+        closing = true;
+        if (animate) {
+            anim.animating = true;
+            anim.anim_multiplier = heights.bottom_height / 15;
+            anim.bottom_y = positions.bottom_y;
             positions.bottom_y = positions.min_bottom_y;
-            requestLayout();
-            invalidate();
-
-            setup.expanded = false;
+        } else {
+            positions.bottom_y = positions.min_bottom_y;
+            anim.bottom_y = positions.bottom_y;
         }
+
+        requestLayout();
+        invalidate();
+    }
+
+    public void close(boolean animate, boolean notify_listener) {
+
+        if (setup.is_expanded) closeBottom(animate, notify_listener);
     }
 
     public void reset() {
 
         reset = true;
+        opening = false;
+        closing = false;
     }
 
     // ==================================================================================================
@@ -265,13 +320,12 @@ public class ExpandableItem extends View {
 
         public View center_layout; // is the visible layout
         public View bottom_layout; // is the hidden layout that can be dragged down
-        // we can have a layout all around the center_layout in the future...
+        public View right_layout; //is the hidden layout that can be dragged from the right
 
         public int id = -1;
         public long long_press_delay = 2 * 1000;
 
-        public boolean expanded = false;
-        //public boolean two_finger_drag = true;
+        public boolean is_expanded = false;
         public boolean long_press_expand = true;
 
         public DRAG_GESTURE drag_gesture = DRAG_GESTURE.TWO_FINGER;
@@ -306,7 +360,7 @@ public class ExpandableItem extends View {
 
     private class AnimationInfo {
 
-        public boolean animate = false;
+        public boolean animating = false;
         public int bottom_y = 0;
         public int anim_multiplier = 4;
     }
@@ -316,7 +370,7 @@ public class ExpandableItem extends View {
         public float drag_fling_threshold = 0;
     }
 
-    private enum DIRECTION {UNKNOWN, UP, DOWN, LEFT, RIGHT};
+    private enum DIRECTION {UP, DOWN, LEFT, RIGHT};
     public enum DRAG_GESTURE {NONE(0), ONE_FINGER(1), TWO_FINGER(2), THREE_FINGER(3);
         int value;
         DRAG_GESTURE(int num) {
@@ -332,7 +386,7 @@ public class ExpandableItem extends View {
         private float dn_y = 0;
         private float up_y = 0;
         private boolean is_crct_nmbr_of_pointers = false;
-        private DIRECTION dir = DIRECTION.UNKNOWN;
+        private DIRECTION dir;
 
         public boolean onTouch(MotionEvent event) {
 
@@ -349,9 +403,9 @@ public class ExpandableItem extends View {
 
                     int finger_touch_count = event.getPointerCount();
                     if (finger_touch_count == setup.drag_gesture.value) {
-                        is_crct_nmbr_of_pointers = true;
                         getParent().requestDisallowInterceptTouchEvent(true);
                         handleMotionMove(event);
+                        is_crct_nmbr_of_pointers = true;
                     }
                     break;
 
@@ -370,26 +424,29 @@ public class ExpandableItem extends View {
             down_time = System.currentTimeMillis();
             y1 = event.getRawY();
             dn_y = y1;
+            if (positions.bottom_y == positions.min_bottom_y) dir = DIRECTION.DOWN;
+            if (positions.bottom_y == positions.max_bottom_y) dir = DIRECTION.UP;
         }
 
         private void handleMotionMove(MotionEvent event) {
 
+            if (anim.animating) {
+                anim.animating = false;
+                positions.bottom_y = anim.bottom_y;
+                opening = false; closing = false;
+            }
+
             y2 = event.getRawY();
             float change_y = y2 - y1;
 
-            DIRECTION new_dir = DIRECTION.UNKNOWN;
-            if (change_y > 0) new_dir = DIRECTION.DOWN;
-            if (change_y < 0) new_dir = DIRECTION.UP;
+            if (change_y > 0) dir = DIRECTION.DOWN;
+            if (change_y < 0) dir = DIRECTION.UP;
 
             positions.bottom_y = positions.bottom_y + (int) change_y;
             if (positions.bottom_y > positions.max_bottom_y) positions.bottom_y = positions.max_bottom_y;
             if (positions.bottom_y < positions.min_bottom_y) positions.bottom_y = positions.min_bottom_y;
 
-            if (dir == DIRECTION.DOWN && new_dir == DIRECTION.UP) dn_y = y2;
-            if (dir == DIRECTION.UP && new_dir == DIRECTION.DOWN) dn_y = y2;
-
             y1 = y2;
-            dir = new_dir;
 
             requestLayout();
             invalidate();
@@ -402,40 +459,13 @@ public class ExpandableItem extends View {
 
             if (is_crct_nmbr_of_pointers) {
 
-                if (change_y == 0) dir = DIRECTION.UNKNOWN;
-                if (change_y > 0) dir = DIRECTION.DOWN;
-                if (change_y < 0) dir = DIRECTION.UP;
-
-                anim.animate = true;
-                anim.bottom_y = positions.bottom_y;
-                anim.anim_multiplier = heights.bottom_height / 15;
-
                 if (Math.abs(change_y) > drag.drag_fling_threshold) {
-                    if (dir == DIRECTION.DOWN) positions.bottom_y = positions.max_bottom_y;
-                    if (dir == DIRECTION.UP) positions.bottom_y = positions.min_bottom_y;
+                    if (dir == DIRECTION.DOWN) openBottom(true, true);
+                    if (dir == DIRECTION.UP) closeBottom(true, true);
                 }
                 if (Math.abs(change_y) < drag.drag_fling_threshold) {
-                    if (dir == DIRECTION.DOWN) positions.bottom_y = positions.min_bottom_y;
-                    if (dir == DIRECTION.UP) positions.bottom_y = positions.max_bottom_y;
-                }
-
-                if (dir == DIRECTION.UNKNOWN) {
-                    // IF DIRECTION IS SOMEHOW UNKNOWN, THEN SET THE BOTTOM_Y TO THE NEAREST MIN OR MAX VALUES
-                    int half_of_movement = heights.bottom_height / 2;
-                    if (change_y >= half_of_movement) positions.bottom_y = positions.max_bottom_y;
-                    else positions.bottom_y = positions.min_bottom_y;
-                }
-
-                requestLayout();
-                invalidate();
-
-                if (!setup.expanded && positions.bottom_y == positions.max_bottom_y) {
-                    setup.expanded = true;
-                    if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableItem.this);
-                }
-                if (setup.expanded && positions.bottom_y == positions.min_bottom_y) {
-                    setup.expanded = false;
-                    if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableItem.this);
+                    if (dir == DIRECTION.DOWN) closeBottom(true, false);
+                    if (dir == DIRECTION.UP) openBottom(true, false);
                 }
 
             } else if (setup.long_press_expand) {
@@ -444,12 +474,10 @@ public class ExpandableItem extends View {
                 long delay = up_time - down_time;
                 if (delay >= setup.long_press_delay) {
 
-                    if (!setup.expanded) {
-                        open(true);
-                        if (setup.open_listener != null) setup.open_listener.onItemOpened(setup.id, ExpandableItem.this);
-                    } else if (setup.expanded) {
-                        close(true);
-                        if (setup.open_listener != null) setup.open_listener.onItemClosed(setup.id, ExpandableItem.this);
+                    if (!setup.is_expanded && !anim.animating) {
+                        open(true, true);
+                    } else if (setup.is_expanded && !anim.animating) {
+                        close(true, true);
                     }
                 }
             }

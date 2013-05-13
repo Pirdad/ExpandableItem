@@ -2,9 +2,11 @@ package com.pirdad.expandableitem.adapter;
 
 import android.content.Context;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.pirdad.expandableitem.R;
@@ -54,7 +56,7 @@ public class SimpleListAdapter extends BaseAdapter implements ExpandableItem.Ite
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
 
-        TestItem tst_item = items.get(position);
+        final TestItem tst_item = items.get(position);
 
         View view_visible = tst_item.visible_view;
         View view_hidden = tst_item.hidden_view;
@@ -68,7 +70,7 @@ public class SimpleListAdapter extends BaseAdapter implements ExpandableItem.Ite
             tst_item.hidden_view = view_hidden;
         }
 
-        ExpandableItem view = new ExpandableItem(context);
+        final ExpandableItem view = new ExpandableItem(context);
         view.setup.id = tst_item.id;
         view.setup.center_layout = view_visible;
         view.setup.bottom_layout = view_hidden;
@@ -76,8 +78,7 @@ public class SimpleListAdapter extends BaseAdapter implements ExpandableItem.Ite
         view.setup.long_press_delay = 1000;
         view.setup.open_listener = this;
         view.setup.extra_params.put("ITEM_REF", tst_item);
-        if (tst_item.is_open) view.open(false);
-        else view.close(false);
+        view.setup.is_expanded = tst_item.is_open;
 
         TextView txt_visible = (TextView) view.setup.center_layout.findViewById(R.id.txt_visible);
         TextView txt_hidden = (TextView) view.setup.bottom_layout.findViewById(R.id.txt_hidden);
@@ -93,7 +94,7 @@ public class SimpleListAdapter extends BaseAdapter implements ExpandableItem.Ite
 
         TestItem item = (TestItem) view.setup.extra_params.get("ITEM_REF");
         item.is_open = true;
-        //Toast.makeText(context, "item: " + id + " is now open", Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "item: " + id + " is now open", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -101,7 +102,7 @@ public class SimpleListAdapter extends BaseAdapter implements ExpandableItem.Ite
 
         TestItem item = (TestItem) view.setup.extra_params.get("ITEM_REF");
         item.is_open = false;
-        //Toast.makeText(context, "item: " + id + " is now closed", Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "item: " + id + " is now closed", Toast.LENGTH_SHORT).show();
     }
 
     public class TestItem {

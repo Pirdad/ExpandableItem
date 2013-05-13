@@ -18,7 +18,7 @@ public class TestActivity extends Activity {
 
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.splash);
+        setContentView(R.layout.activity_test);
 
         btn_simple_single = (Button) findViewById(R.id.btn_simple_single);
         btn_simple_single.setOnClickListener(new View.OnClickListener() {
